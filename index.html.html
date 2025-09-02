@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pengelola Keuangan Pribadi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+        .progress-bar {
+            height: 10px;
+            color: #4ade80;
+        }
+        .progress-bar::-webkit-progress-bar {
+            background-color: #e5e7eb;
+            border-radius: 5px;
+        }
+        .progress-bar::-webkit-progress-value {
+            background-color: #4ade80;
+            border-radius: 5px;
+        }
+        .progress-bar::-moz-progress-bar {
+            background-color: #4ade80;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+    <div class="container mx-auto p-6 max-w-4xl">
+        <header class="text-center mb-8">
+            <div class="hero-image mb-4">
+                <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/8397b6b3-2d3d-4991-93ee-4937f2208903.png" alt="A serene financial planning scene with a digital ledger, intertwining paths of coins and savings jars surrounded by growth charts and upward arrows symbolizing savings and financial goals, in a clean and modern digital art style with blue and green tones" class="w-full rounded-lg shadow-lg" onerror="this.style.display='none';" />
+            </div>
+            <h1 class="text-4xl font-bold text-white mb-2">Pengelola Keuangan Pribadi by Pasha</h1>
+            <p class="text-gray-300 text-lg">Kelola pemasukan, pengeluaran, tabungan, dan capai target impian Anda.</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div class="bg-white p-6 rounded-lg shadow-lg card fade-in">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-700">Saldo Tabungan</h2>
+                <p id="totalSavings" class="text-3xl font-bold text-green-600 mb-4">Rp 0</p>
+                <div class="flex gap-4">
+                    <input type="number" id="incomeAmount" placeholder="Jumlah Pemasukan" class="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                    <button onclick="addIncome()" class="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition">Tambah Pemasukan</button>
+                </div>
+                <div class="flex gap-4 mt-4">
+                    <input type="number" id="expenseAmount" placeholder="Jumlah Pengeluaran" class="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                    <button onclick="addExpense()" class="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition">Tambah Pengeluaran</button>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow-lg card fade-in">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-700">Riwayat Transaksi</h2>
+                <ul id="transactions" class="list-disc list-inside text-gray-600 max-h-48 overflow-y-auto">
+                    <!-- Transaksi akan ditambahkan di sini -->
+                </ul>
+                <button onclick="clearHistory()" class="mt-4 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition">Hapus Riwayat</button>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow-lg card fade-in">
+            <h2 class="text-2xl font-semibold mb-4 text-gray-700">Target Pembelian</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                <input type="text" id="goalName" placeholder="Nama Target (e.g., Laptop, Rumah)" class="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                <input type="number" id="goalAmount" placeholder="Jumlah Target (Rp)" class="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <button onclick="addGoal()" class="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition mb-6">Tambah Target</button>
+            <ul id="goals" class="space-y-4">
+                <!-- Target akan ditampilkan di sini -->
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Data penyimpanan menggunakan localStorage
+        let savings = parseFloat(localStorage.getItem('savings')) || 0;
+        let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+        let goals = JSON.parse(localStorage.getItem('goals')) || [];
+
+        // Fungsi untuk mengupdate UI
+        function updateUI() {
+            document.getElementById('totalSavings').textContent = 'Rp ' + savings.toLocaleString();
+            localStorage.setItem('savings', savings);
+
+            const transList = document.getElementById('transactions');
+            transList.innerHTML = '';
+            transactions.slice(-10).forEach(trans => {
+                const li = document.createElement('li');
+                li.textContent = `${trans.type}: Rp ${trans.amount.toLocaleString()} (${trans.date})`;
+                li.className = trans.type === 'Pemasukan' ? 'text-green-600' : 'text-red-600';
+                transList.appendChild(li);
+            });
+            localStorage.setItem('transactions', JSON.stringify(transactions));
+
+            const goalsList = document.getElementById('goals');
+            goalsList.innerHTML = '';
+            goals.forEach((goal, index) => {
+                const progress = (savings / goal.amount * 100).toFixed(1);
+                const saved = Math.min(savings, goal.amount);
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-semibold text-gray-700">${goal.name}</span>
+                        <span class="text-gray-500">Rp ${goal.amount.toLocaleString()}</span>
+                    </div>
+                    <progress class="progress-bar w-full" value="${saved}" max="${goal.amount}"></progress>
+                    <p class="text-sm text-gray-500 mt-1">Terkumpul: Rp ${saved.toLocaleString()} (${progress >= 100 ? 'Target tercapai!' : progress + '%'})</p>
+                    <button onclick="deleteGoal(${index})" class="mt-2 px-4 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600 transition">Hapus</button>
+                `;
+                goalsList.appendChild(div);
+            });
+            localStorage.setItem('goals', JSON.stringify(goals));
+        }
+
+        // Fungsi untuk menambah pemasukan
+        function addIncome() {
+            const amount = parseFloat(document.getElementById('incomeAmount').value);
+            if (amount > 0) {
+                savings += amount;
+                transactions.push({
+                    type: 'Pemasukan',
+                    amount: amount,
+                    date: new Date().toLocaleDateString()
+                });
+                document.getElementById('incomeAmount').value = '';
+                updateUI();
+            }
+        }
+
+        // Fungsi untuk menambah pengeluaran
+        function addExpense() {
+            const amount = parseFloat(document.getElementById('expenseAmount').value);
+            if (amount > 0 && amount <= savings) {
+                savings -= amount;
+                transactions.push({
+                    type: 'Pengeluaran',
+                    amount: amount,
+                    date: new Date().toLocaleDateString()
+                });
+                document.getElementById('expenseAmount').value = '';
+                updateUI();
+            } else if (amount > savings) {
+                alert('Saldo tabungan tidak mencukupi untuk pengeluaran ini.');
+            }
+        }
+
+        // Fungsi untuk menambah target
+        function addGoal() {
+            const name = document.getElementById('goalName').value.trim();
+            const amount = parseFloat(document.getElementById('goalAmount').value);
+            if (name && amount > 0) {
+                goals.push({ name: name, amount: amount });
+                document.getElementById('goalName').value = '';
+                document.getElementById('goalAmount').value = '';
+                updateUI();
+            }
+        }
+
+        // Fungsi untuk menghapus target
+        function deleteGoal(index) {
+            goals.splice(index, 1);
+            updateUI();
+        }
+
+        // Fungsi untuk menghapus riwayat
+        function clearHistory() {
+            transactions = [];
+            updateUI();
+        }
+
+        // Inisialisasi saat halaman load
+        window.onload = updateUI;
+    </script>
+</body>
+</html>
+</content>
+</create_file>
